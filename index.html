@@ -2,29 +2,56 @@
 <html>
 <head>
     <title>RWM Dinner QR Scanner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qr-scanner/1.4.2/qr-scanner.umd.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        #video { width: 100%; max-width: 500px; }
+        #result { margin-top: 20px; font-weight: bold; }
+        #error { color: red; }
+    </style>
 </head>
 <body>
     <h1>RWM Dinner QR Scanner</h1>
     <video id="video"></video>
     <div id="result"></div>
+    <div id="error"></div>
 
     <script>
         const video = document.getElementById('video');
         const resultDiv = document.getElementById('result');
+        const errorDiv = document.getElementById('error');
 
-        const qrScanner = new QrScanner(video, result => {
-            if (result.data.startsWith('RWMDinner-')) {
-                const attendeeId = result.data.split('-')[1];
-                // Here you would typically make an API call to get attendee details
-                // For this example, we'll just display the scanned data
-                resultDiv.innerHTML = `Valid QR Code: Attendee ID ${attendeeId}`;
-            } else {
-                resultDiv.innerHTML = 'Invalid QR Code';
+        // Check if we're using HTTPS
+        if (location.protocol !== 'https:') {
+            errorDiv.textContent = 'Please use HTTPS to access this page for camera functionality.';
+        }
+
+        const qrScanner = new QrScanner(
+            video,
+            result => {
+                console.log('QR Code detected:', result.data);
+                if (result.data.startsWith('RWMDinner-')) {
+                    const attendeeId = result.data.split('-')[1];
+                    resultDiv.textContent = `Valid QR Code: Attendee ID ${attendeeId}`;
+                    // Here you would typically make an API call to get attendee details
+                } else {
+                    resultDiv.textContent = 'Invalid QR Code';
+                }
+            },
+            { 
+                highlightScanRegion: true,
+                highlightCodeOutline: true,
             }
-        });
+        );
 
-        qrScanner.start();
+        qrScanner.start().then(() => {
+            console.log('QR scanner started');
+            resultDiv.textContent = 'Scanning... (please make sure a QR code is visible)';
+        }).catch(err => {
+            console.error('Failed to start QR scanner:', err);
+            errorDiv.textContent = `Error starting scanner: ${err.message}. Please make sure you've granted camera permissions.`;
+        });
     </script>
 </body>
 </html>
