@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>RWM Dinner QR Scanner</title>
+    <title>RWM Dinner Check-in Scanner</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qr-scanner/1.4.2/qr-scanner.umd.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
+        body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 20px; }
         #video { width: 100%; max-width: 500px; }
-        #result { margin-top: 20px; font-weight: bold; }
+        #result { margin-top: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
         #error { color: red; }
     </style>
 </head>
 <body>
-    <h1>RWM Dinner QR Scanner</h1>
+    <h1>RWM Dinner Check-in Scanner</h1>
     <video id="video"></video>
     <div id="result"></div>
     <div id="error"></div>
@@ -22,27 +22,32 @@
         const resultDiv = document.getElementById('result');
         const errorDiv = document.getElementById('error');
 
-        // Check if we're using HTTPS
-        if (location.protocol !== 'https:') {
-            errorDiv.textContent = 'Please use HTTPS to access this page for camera functionality.';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxZ8uivNMuc_vCMrMf2WOh0SLU1PS03iH_ovirfsz9nnd810fobv5_OD9DiDS-XCOEj_w/exec';
+
+        async function checkInAttendee(id) {
+            try {
+                const response = await fetch(`${API_URL}?id=${id}`);
+                const result = await response.json();
+                return result;
+            } catch (error) {
+                console.error('Error:', error);
+                return { success: false, message: 'Error connecting to the server' };
+            }
         }
 
         const qrScanner = new QrScanner(
             video,
-            result => {
+            async result => {
                 console.log('QR Code detected:', result.data);
                 if (result.data.startsWith('RWMDinner-')) {
                     const attendeeId = result.data.split('-')[1];
-                    resultDiv.textContent = `Valid QR Code: Attendee ID ${attendeeId}`;
-                    // Here you would typically make an API call to get attendee details
+                    const checkInResult = await checkInAttendee(attendeeId);
+                    resultDiv.textContent = checkInResult.message;
                 } else {
                     resultDiv.textContent = 'Invalid QR Code';
                 }
             },
-            { 
-                highlightScanRegion: true,
-                highlightCodeOutline: true,
-            }
+            { highlightScanRegion: true, highlightCodeOutline: true }
         );
 
         qrScanner.start().then(() => {
